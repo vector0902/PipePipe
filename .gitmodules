@@ -6,5 +6,5 @@
 [submodule "PipePipeClient"]
         path = PipePipeClient
         #url = git@github.com:vector0902/PipePipeClient.git
-        rl = https://github.com/vector0902/PipePipeClient
+        url = https://github.com/vector0902/PipePipeClient
         branch = dev

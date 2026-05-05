@@ -115,8 +115,6 @@ cd PipePipeClient
 
 ## 7. 构建尝试 / Build Attempt
 
-**问题**: 系统未安装 Android SDK，无法执行 Gradle 构建。
-
 **解决方案**: 需要安装 Android SDK（cmdline-tools 或完整 SDK）。
 
 ### 安装建议 / Installation Suggestion

@@ -4,3 +4,4 @@
 cmd.sh
 *.log
 AGENTS.md
+outputs/

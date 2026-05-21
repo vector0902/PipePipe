@@ -1,0 +1,22 @@
+services:
+  builder:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - ./PipePipeClient:/app/PipePipeClient
+      - ./PipePipeExtractor:/app/PipePipeExtractor
+      - ./build:/app/PipePipeClient/app/build
+      - ./gradle-cache:/root/.gradle
+      - ./outputs:/outputs
+      - ./android-sdk:/opt/android-sdk-host
+    command:
+      - bash
+      - -c
+      - |
+        cp -r /opt/android-sdk/* /opt/android-sdk-host/ 2>/dev/null || true
+        yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+        cd /app/PipePipeClient
+        ./gradlew assembleDebug --no-daemon
+        cp -f app/build/outputs/apk/debug/*.apk /outputs/
+    working_dir: /app/PipePipeClient

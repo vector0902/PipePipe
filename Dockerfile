@@ -18,14 +18,8 @@ RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
     rm /tmp/cmdline-tools.zip
 
 RUN yes | sdkmanager --licenses > /dev/null 2>&1 || true
-RUN sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+RUN sdkmanager "platforms;android-33" "build-tools;33.0.2" "build-tools;30.0.3" "platform-tools"
 
 WORKDIR /app
 
-COPY PipePipeClient/ PipePipeClient/
-COPY PipePipeExtractor/ PipePipeExtractor/
-
-RUN chmod +x PipePipeClient/gradlew PipePipeExtractor/gradlew
-
-# Build
-RUN cd PipePipeClient && ./gradlew assembleDebug --stacktrace --info -DskipFormatKtlint 2>&1
+# NOTE: Code and gradle build happen at runtime via volume mounts

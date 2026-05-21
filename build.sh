@@ -1,41 +1,55 @@
 #!/bin/bash
 set -e
 
-cd `dirname $0`
-
 IMAGE_NAME="pipepipe-builder"
 OUTPUT_DIR="./outputs"
 GRADLE_CACHE_DIR="./gradle-cache"
-BUILD_TYPE="${1:-debug}"
+BUILD_DIR="./build"
+BUILD_TYPE="debug"
+
+# Parse arguments
+SKIP_DOCKER_BUILD=0
+for arg in "$@"; do
+    case $arg in
+        skip-build)
+            SKIP_DOCKER_BUILD=1
+            ;;
+        release)
+            BUILD_TYPE="release"
+            ;;
+        *)
+            ;;
+    esac
+done
 
 # Create directories
 mkdir -p "$GRADLE_CACHE_DIR"
 mkdir -p "$OUTPUT_DIR"
+mkdir -p "$BUILD_DIR"
 
-# Build Docker image only if not exists or force rebuild
-if [ "$1" != "quick" ] && [ "$1" != "skip-build" ]; then
-    echo "=== Building Docker image ==="
-    docker build -t "$IMAGE_NAME" .
+# Step 1: Build Docker image (no gradle build inside, just JDK + SDK)
+if [ "$SKIP_DOCKER_BUILD" -eq 0 ]; then
+    echo "=== Building Docker image (JDK + SDK only) ==="
+    docker build -t "$IMAGE_NAME" --target builder .
+else
+    echo "=== Skipping Docker build ==="
 fi
 
-if [ "$1" = "skip-build" ]; then
-    echo "=== Skipping Docker build, using existing image ==="
-fi
-
-# Run build with Gradle cache and local build directories mounted
-# This dramatically speeds up subsequent builds
-echo "=== Building $BUILD_TYPE APK (with cache) ==="
+# Step 2: Run gradle build with mounted code + build dir + gradle cache
+# This is where the actual compilation happens, and results are persisted to ./build
+echo "=== Building $BUILD_TYPE APK (mounted, incremental) ==="
 docker run --rm \
     -v "$GRADLE_CACHE_DIR:/root/.gradle" \
-    -v "$(pwd)/PipePipeClient/.gradle:/app/PipePipeClient/.gradle" \
-    -v "$(pwd)/PipePipeExtractor/.gradle:/app/PipePipeExtractor/.gradle" \
-    -v "$(pwd)/PipePipeClient/app/build:/app/PipePipeClient/app/build" \
-    "$IMAGE_NAME" bash -c "cd /app/PipePipeClient && ./gradlew assemble$BUILD_TYPE --no-daemon -q"
+    -v "$(pwd)/PipePipeClient:/app/PipePipeClient" \
+    -v "$(pwd)/PipePipeExtractor:/app/PipePipeExtractor" \
+    -v "$(pwd)/build:/app/PipePipeClient/app/build" \
+    "$IMAGE_NAME" bash -c "cd /app/PipePipeClient && ./gradlew assemble$BUILD_TYPE --no-daemon"
 
 # Copy APK to outputs
-docker create --name pipepipe-temp "$IMAGE_NAME"
-docker cp "pipepipe-temp:/app/PipePipeClient/app/build/outputs/apk/$BUILD_TYPE/." "$OUTPUT_DIR/"
-docker rm pipepipe-temp
+mkdir -p "$OUTPUT_DIR"
+cp -f build/app/build/outputs/apk/$BUILD_TYPE/*.apk "$OUTPUT_DIR/" 2>/dev/null || true
+echo "=== Build complete ==="
+ls -la "$OUTPUT_DIR"
 
 echo "=== APKs built successfully ==="
 ls -lh "$OUTPUT_DIR"

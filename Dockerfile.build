@@ -29,7 +29,7 @@ COPY PipePipeExtractor /app/PipePipeExtractor
 # Build the APK
 RUN cd /app/PipePipeClient && \
     chmod +x ./gradlew && \
-    ./gradlew assembleDebug --no-daemon
+    ./gradlew assembleDebug --no-daemon --no-configuration-cache
 
 # Output stage - copy APK to a clean image for easy extraction
 FROM scratch AS output

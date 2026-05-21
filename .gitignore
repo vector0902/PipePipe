@@ -5,3 +5,6 @@ cmd.sh
 *.log
 AGENTS.md
 outputs/
+build/
+android-sdk/
+gradle-cache/

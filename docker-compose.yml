@@ -2,21 +2,25 @@ services:
   builder:
     build:
       context: .
+      dockerfile: Dockerfile
       target: builder
+    image: pipepipe-builder:latest
     volumes:
       - ./PipePipeClient:/app/PipePipeClient
       - ./PipePipeExtractor:/app/PipePipeExtractor
-      - ./build:/app/PipePipeClient/app/build
       - ./gradle-cache:/root/.gradle
+      - ./build-cache:/app/PipePipeClient/app/build
       - ./outputs:/outputs
-      - ./android-sdk:/opt/android-sdk-host
+    environment:
+      - GRADLE_USER_HOME=/root/.gradle
+      - ANDROID_HOME=/opt/android-sdk
     command:
       - bash
       - -c
       - |
-        cp -r /opt/android-sdk/* /opt/android-sdk-host/ 2>/dev/null || true
-        yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
         cd /app/PipePipeClient
-        ./gradlew assembleDebug --no-daemon
+        chmod +x ./gradlew
+        ./gradlew assembleDebug --no-daemon --build-cache
         cp -f app/build/outputs/apk/debug/*.apk /outputs/
+        echo "✓ Build complete! APK saved to ./outputs/"
     working_dir: /app/PipePipeClient

@@ -57,13 +57,23 @@ switch_branch() {
     if [ "${branch_exists}" = true ]; then
         echo "[${repo_name}] Branch '${target_branch}' exists, switching..."
         git checkout "${target_branch}"
-    elif [ "${force_create}" = "true" ] || [ "${target_branch}" = "dev" ]; then
-        echo "[${repo_name}] Creating new branch '${target_branch}'..."
-        git checkout -b "${target_branch}"
     else
-        echo "[ERROR] ${repo_name}: Branch '${target_branch}' does not exist!"
-        echo "        Use --create flag to force create, or check the branch name."
-        return 1
+        local remote_branch_exists=false
+        if git ls-remote --heads origin "${target_branch}" 2>/dev/null | grep -q "${target_branch}"; then
+            remote_branch_exists=true
+        fi
+
+        if [ "${remote_branch_exists}" = true ]; then
+            echo "[${repo_name}] Remote branch 'origin/${target_branch}' found, creating local branch with tracking..."
+            git checkout -b "${target_branch}" --track "origin/${target_branch}"
+        elif [ "${force_create}" = "true" ] || [ "${target_branch}" = "dev" ]; then
+            echo "[${repo_name}] Creating new branch '${target_branch}'..."
+            git checkout -b "${target_branch}"
+        else
+            echo "[ERROR] ${repo_name}: Branch '${target_branch}' does not exist!"
+            echo "        Use --create flag to force create, or check the branch name."
+            return 1
+        fi
     fi
 
     return 0
@@ -150,6 +160,11 @@ else
     echo "No .gitmodules found, no submodules to process."
 fi
 
+echo ""
+echo "=========================================="
+echo " Branch tracking status:"
+echo "=========================================="
+git branch -vv | cat
 echo ""
 echo "=========================================="
 echo " Done! All repositories processed."
